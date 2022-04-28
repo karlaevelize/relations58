@@ -10,12 +10,29 @@ const app = express()
 const PORT = 4000
 
 //middlewares
+//it's called before we get to the endpoint
 app.use(express.json())
+
+const helloMiddleware = (request, response, next) => {
+  console.log("in middleware")
+  next()
+}
+
+const randomAuthorized = (request, response, next) => {
+  const myNumber = Math.random() * 10
+  console.log("number", myNumber)
+
+  if (myNumber < 5) {
+    response.status(401).send("Not authorized in this space")
+  }  else {
+    next()
+  }
+}
 
 //We will create our server here
 
 //Welcome endpoint
-app.get("/", async (request, response, next) => {
+app.get("/", randomAuthorized, async (request, response, next) => {
   try {
     response.send("Welcome to my API")
   } catch (error) {
@@ -24,16 +41,13 @@ app.get("/", async (request, response, next) => {
   }
 })
 
-//CRUD
-
 //GET/READ -> retrieve data, read data, only method browser can handle
 
 //send a list o users
 app.get("/users", async (request, response, next) => {
   try {
     const users = await User.findAll({ include: {
-      model: TodoList,
-      include: TodoItem
+      model: TodoList
     }})
     response.send(users)
   } catch (error) {
@@ -85,8 +99,8 @@ app.delete("/users/:id", async (request, response, next) => {
     const user = await User.findByPk(id)
 
     if(!user){
-      response.status(404).send("Sorry, no user with that id")
-    }
+      return response.status(404).send("Sorry, no user with that id")
+    } 
 
     //then destroy the user
     const destroyedUser = user.destroy()
